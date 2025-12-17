@@ -9,7 +9,7 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mon
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
-  title: "0xMeta // Terminal",
+  title: "0xMeta Terminal",
   description: "High-performance market intelligence terminal with X402 payments.",
 };
 

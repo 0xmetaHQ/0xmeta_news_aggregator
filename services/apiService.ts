@@ -1,4 +1,3 @@
-// services/apiService.ts
 import { AppConfig, NewsResponse, X402PaymentPayload } from '@/types';
 import { API_BASE_URL } from '@/constants';
 
@@ -57,6 +56,22 @@ export class ApiService {
 
     return response.json();
   }
+
+  async getFreeNews(category: string): Promise<NewsResponse> {
+    const response = await fetch(`${this.baseUrl}/news/free/${category}`, {
+      headers: {
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch free news: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
 }
 
 export const apiService = new ApiService();

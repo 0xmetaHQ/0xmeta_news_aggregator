@@ -13,35 +13,34 @@ import { generateMarketBriefingAction } from './actions';
 import { X, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { NewsResponse, NewsItem, ColumnData } from '@/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import { FREE_CATEGORIES } from '@/constants';
+import { apiService } from '@/services/apiService';
 
-// Transform API news to match the UI format
-function transformNewsToItems(news: NewsResponse, category: string): NewsItem[] {
+function transformNewsToItems(
+  news: NewsResponse,
+  category: string
+): NewsItem[] {
   const allItems = [...news.cryptonews, ...news.twitter];
-  
-  return allItems.slice(0, 20).map((item, idx) => ({
-    id: `${category}-${idx}`,
-    title: item.title || item.text.substring(0, 100),
+
+  return allItems.slice(0, 20).map((item) => ({
+    id: item.oxmeta_id,
+    title: item.title ?? item.text,
     source: item.source === 'cryptonews' ? 'CryptoNews' : 'Twitter/X',
-    time: new Date(item.timestamp * 1000).toLocaleString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    }),
-    sentiment: (item.tokens && item.tokens.length > 3) ? 'bullish' : 
-               (item.tokens && item.tokens.length < 2) ? 'bearish' : 'neutral',
-    url: item.url || '#',
-    tags: item.tokens || [],
-    summary: item.long_context || item.short_context || item.text,
+    time: new Date(item.timestamp * 1000).toISOString(),
+    sentiment: item.sentiment as 'bullish' | 'bearish' | 'neutral',
+    url: item.sources?.[0] ?? item.url ?? '#',
+    tags: item.tokens ?? [],
+    summary: item.text, 
   }));
 }
+
 
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [briefing, setBriefing] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
-    ['ai']
+    ['rwa', 'macro', 'virtuals']
   );
   // Track loading state for each category
   const [loadingCategories, setLoadingCategories] = useState<Set<string>>(new Set());
@@ -51,25 +50,37 @@ export default function Home() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    const fetchFreeCategories = async () => {
+      for (const category of FREE_CATEGORIES) {
+        // skip if already cached & valid
+        const cached = paidNews[category];
+        if (cached && Date.now() - cached.timestamp < 5 * 60 * 60 * 1000) {
+          continue;
+        }
+
+        try {
+          const response = await apiService.getFreeNews(category);
+          const items = transformNewsToItems(response, category);
+
+          setPaidNews(category, items);
+        } catch (err) {
+          console.error(`Failed to auto-fetch ${category}`, err);
+        }
+      }
+    };
+
+    fetchFreeCategories();
+  }, []);
+
   
   const { isConnected, connect } = useWallet();
   const { data: config } = useConfig();
   const { mutateAsync: payAndFetch } = usePayAndFetchNews();
 
   // Merge static categories with paid ones
-  const displayCategories: ColumnData[] = CATEGORIES.map(cat => {
-    // We access the store state directly. 
-    // Since we are inside the component, this will re-render when store changes.
-    // However, we need to check expiration. 
-    // The store's getPaidNews is a function, but we can also just access the raw state and check here 
-    // OR allow the component to use the raw state and filter.
-    // Given the store structure, let's use the raw state for reactivity and check timestamp here or rely on the store's valid data if we filtered it.
-    // BETTER APPROACH for Reactivity: 
-    // The store exposes `paidNews`. We can use a helper or just check directly.
-    
-    // To avoid hydration mismatch, we must ensure this logic is client-side or handled gracefully.
-    // We'll use the raw data if available and valid.
-    
+  const displayCategories: ColumnData[] = CATEGORIES.map(cat => {  
     let paidItems: NewsItem[] | undefined;
     
     if (isClient) {
@@ -113,9 +124,6 @@ export default function Home() {
       return;
     }
     setSelectedCategoryIds(prev => {
-      // If currently showing all (length == all), and user clicks one, 
-      // do we toggle it off or switch to specific selection?
-      // Logic: standard toggle.
       if (prev.includes(id)) {
           const newItem = prev.filter(c => c !== id);
           return newItem.length === 0 ? CATEGORIES.map(c => c.id) : newItem;
@@ -131,11 +139,6 @@ export default function Home() {
       if (!isConnected) {
         await connect(config);
       }
-      
-      // We'll proceed to pay immediately after connecting if possible, 
-      // or user might need to click again. 
-      // For better UX, let's try to proceed.
-      // However, connect is async. 
       
       // Update loading state
       setLoadingCategories(prev => new Set(prev).add(categoryId));

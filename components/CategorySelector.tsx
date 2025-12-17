@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { CATEGORIES, OXMETA_FEE_USDC } from '@/constants';
 import { useWallet } from '@/hooks/useWallet';
 import { useConfig, usePayAndFetchNews } from '@/hooks/useNews';
-// import { PaymentModal } from './PaymentModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
