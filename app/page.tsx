@@ -20,9 +20,17 @@ function transformNewsToItems(
   news: NewsResponse,
   category: string
 ): NewsItem[] {
-  const allItems = [...news.cryptonews, ...news.twitter];
+  const cryptoNewsItems = news.cryptonews.slice(0, 30);
+  const twitterItems = news.twitter.slice(0, 20);
+  
+  // Combine both arrays
+  const allItems = [...cryptoNewsItems, ...twitterItems];
 
-  return allItems.slice(0, 20).map((item) => ({
+  // Sort by timestamp (latest first)
+  const sortedItems = allItems.sort((a, b) => b.timestamp - a.timestamp);
+
+  // Transform to NewsItem format
+  return sortedItems.map((item) => ({
     id: item.oxmeta_id,
     title: item.title ?? item.text,
     source: item.source === 'cryptonews' ? 'CryptoNews' : 'Twitter/X',
@@ -31,6 +39,7 @@ function transformNewsToItems(
     url: item.sources?.[0] ?? item.url ?? '#',
     tags: item.tokens ?? [],
     summary: item.text, 
+    timestamp: item.timestamp, // Keep original timestamp for sorting
   }));
 }
 

@@ -10,6 +10,7 @@ export interface NewsItem {
   url: string;
   tags?: string[];
   summary?: string;
+  timestamp: number;
 }
 
 export interface ColumnData {

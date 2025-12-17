@@ -9,6 +9,24 @@ interface NewsCardProps {
   item: NewsItem;
 }
 
+// Helper function to format time relative to now
+const formatTimeAgo = (timestamp: number): string => {
+  const now = Date.now();
+  const diffMs = now - (timestamp * 1000);
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  // For older items, show the date
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
 export const NewsCard: React.FC<NewsCardProps> = ({ item }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -30,7 +48,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item }) => {
             )}>
               {item.title}
             </h4>
-            <Badge variant={item.sentiment} className="opacity-70 group-hover:opacity-100">
+            <Badge variant={item.sentiment} className="opacity-70 group-hover:opacity-100 shrink-0">
               {item.sentiment.substr(0, 4)}
             </Badge>
           </div>
@@ -38,7 +56,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item }) => {
           <div className="flex items-center justify-between mt-1">
             <div className="flex items-center gap-3 text-[9px] font-mono text-zinc-600 uppercase tracking-wider">
               <span className="text-zinc-500 group-hover:text-acid transition-colors">[{item.source}]</span>
-              <span>{item.time}</span>
+              <span>{formatTimeAgo(item.timestamp)}</span>
             </div>
             <ArrowUpRight className="w-3 h-3 text-zinc-500 group-hover:text-white transition-colors" />
           </div>
